@@ -160,10 +160,12 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false });
   }
 
-  // 2. Contacto + campos
+  // 2. Contacto + campos (solo se envían los campos con valor, nunca null)
   const ce = b.campos_email && typeof b.campos_email === "object" ? b.campos_email : {};
-  const custom = Object.entries(FIELD_MAP).map(([key, slug]) => ({ slug, value: str(ce[key]) || null }));
-  const base = [{ slug: "first_name", value: nombre || null }, { slug: "phone_number", value: telefono || null }];
+  const custom = Object.entries(FIELD_MAP)
+    .map(([key, slug]) => ({ slug, value: str(ce[key]) }))
+    .filter((f) => f.value);
+  const base = [{ slug: "first_name", value: nombre }, { slug: "phone_number", value: telefono }].filter((f) => f.value);
 
   let contactId;
   try {
@@ -171,11 +173,22 @@ export default async function handler(req, res) {
     try {
       contactId = await upsertContact(email, [...base, ...custom]);
     } catch (e) {
-      // Si algún campo personalizado no existe en Systeme, guardamos al menos el contacto
       if (e.status !== 422 && e.status !== 400) throw e;
-      console.error("Campos personalizados rechazados, guardo solo los básicos:", e.message);
+      console.error("Systeme rechazó el envío completo:", e.message);
+      // Guardamos el contacto con lo básico y probamos los campos uno a uno para saber cuál falla
       contactId = await upsertContact(email, base);
-      await telegram(`⚠️ Test SSE: Systeme rechazó los campos del email para ${email}. Revisa que existan los slugs: ${Object.values(FIELD_MAP).join(", ")}`);
+      const fallos = [];
+      for (const f of custom) {
+        try {
+          await sys("PATCH", `/contacts/${contactId}`, { fields: [f] });
+        } catch (err) {
+          fallos.push(`• ${f.slug} (${f.value.length} caracteres): ${err.message.slice(0, 220)}`);
+        }
+      }
+      if (fallos.length) {
+        console.error("Campos que fallan:", fallos.join(" | "));
+        await telegram(`⚠️ Test SSE · Systeme rechazó estos campos para ${email}:\n\n${fallos.join("\n")}`);
+      }
     }
 
     // 3. Etiquetas (las de automatización primero, por si algo corta a medias)
