@@ -1,6 +1,0 @@
-{
-  "name": "test-sse",
-  "private": true,
-  "type": "module",
-  "engines": { "node": ">=18" }
-}
