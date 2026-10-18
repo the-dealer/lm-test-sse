@@ -203,6 +203,17 @@ export default async function handler(req, res) {
       }
     }
 
+    // 2b. Si repite el test, quitamos las etiquetas que disparan el email para que la regla vuelva a saltar
+    for (const name of ["alerta_si", "alerta_no"]) {
+      try {
+        if (!tagCache) await loadTags();
+        const id = tagCache.get(name);
+        if (id) await sys("DELETE", `/contacts/${contactId}/tags/${id}`);
+      } catch (e) {
+        if (e.status !== 404 && e.status !== 422) console.error(`Quitar ${name}:`, e.message);
+      }
+    }
+
     // 3. Etiquetas (las de automatización primero, por si algo corta a medias)
     const tags = Array.isArray(b.tags) ? b.tags.map((t) => str(t, 80)).filter(Boolean) : [];
     const priority = (t) => (/^(alerta_|icp_|intencion_|test_sse)/.test(t) ? 0 : 1);
