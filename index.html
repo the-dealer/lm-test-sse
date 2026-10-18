@@ -222,28 +222,33 @@ const CASES = [
     problema:"Su médico le dio un año para perder 12 kg por su asma. Usaba el inhalador a todas horas.",
     fases:"Empezamos por su estrés y su sueño, antes de tocar la comida. Después ajustamos entrenamiento y alimentación.",
     resultado:"En 4 meses perdió 14,4 kg de grasa y ganó 6 kg de músculo. Hoy ya no necesita el inhalador.",
+    email:"Mira el caso de Sergio: lo hacía todo y no bajaba. Empezamos por su estrés y su sueño, y en 4 meses perdió 14,4 kg de grasa.",
     stats:[["−14,4 kg","de grasa en 4 meses"],["+6 kg","de músculo"]],
     quote:"He tenido que cambiar toda la ropa." },
   { nombre:"Eibar", sexo:"hombre", kg:6, contexto:"Jefe de proyectos · padre de 2 niños pequeños",
     problema:"Mucha responsabilidad en el trabajo, dos peques en casa y un estrés que no bajaba nunca.",
     fases:"Lo primero no fue un entreno ni un plan de comidas. Regulamos su sueño y su estrés, y sobre esa base el entreno y la comida empezaron a dar resultado.",
     resultado:"En 3 meses perdió 6 kg de grasa.",
+    email:"Mira el caso de Eibar: jefe de proyectos, dos niños pequeños y un estrés que no bajaba. Empezamos por su sueño y su estrés, y en 3 meses perdió 6 kg de grasa.",
     stats:[["−6 kg","de grasa"],["3 meses","con su agenda de siempre"]] },
   { nombre:"Iosune", sexo:"mujer", kg:6, contexto:"",
     problema:"Llevaba toda la vida intentándolo y nunca había visto un 6 en la báscula.",
     fases:"",
     resultado:"En 4 meses perdió 6 kg de grasa, sin restricción. Y por fin vio el 6 en la báscula.",
+    email:"Mira el caso de Iosune: llevaba toda la vida intentándolo. Respetando el orden, en 4 meses perdió 6 kg de grasa, sin restricción.",
     stats:[["−6 kg","de grasa"],["4 meses","sin restricción"]],
     quote:"En 4 meses he conseguido lo que no había hecho en 36 años. Llevando una vida normal y sin restricción de nada." },
   { nombre:"Nayade", sexo:"mujer", kg:7.8, cintura:true, contexto:"",
     problema:"",
     fases:"",
     resultado:"Perdió 7,8 kg de grasa, 9 cm de cintura y 8 cm de cadera, ganando músculo y sin restricción.",
+    email:"Mira el caso de Nayade: respetando el orden, perdió 7,8 kg de grasa y 9 cm de cintura, ganando músculo y sin restricción.",
     stats:[["−7,8 kg","de grasa"],["−9 cm","de cintura"],["−8 cm","de cadera",true]] },
   { nombre:"Teresa", sexo:"mujer", kg:2, contexto:"Empresaria",
     problema:"Llevaba 2 años haciendo crossfit, con entrenador y nutricionista, y solo había perdido 2 kg.",
     fases:"Empezamos regulando solo su sueño y su estrés.",
     resultado:"En 2 semanas perdió 2 kg de grasa. Lo mismo que en los 2 años anteriores.",
+    email:"Mira el caso de Teresa: 2 años de crossfit, con entrenador y nutricionista, y solo 2 kg menos. Empezamos por su sueño y su estrés, y en 2 semanas perdió 2 kg de grasa.",
     stats:[["2 años","para perder 2 kg"],["2 semanas","para perder 2 kg de grasa"]],
     quote:"En todas las dietas que he hecho nunca he visto cambios tan pronto." }
 ];
@@ -325,7 +330,7 @@ const SYM = {
 };
 /* versión corta para el bloque ICP */
 const SHORT = {
-  E1:()=>"te cuesta desconectar del trabajo", E2:()=>"necesitas café para arrancar y para aguantar la tarde",
+  E1:()=>"te cuesta desconectar del trabajo", E2:()=>"dependes del café para aguantar el día",
   E3:()=>"el hambre aparece de golpe a media tarde", E4:()=>"la grasa se te va a la tripa",
   E5:()=>`te sientes ${g("acelerado","acelerada")} aunque estés ${g("agotado","agotada")}`, E6:()=>"no bajas revoluciones ni de vacaciones",
   S0:()=>"duermes menos de 6 horas", S1:()=>"te despiertas de madrugada", S2:()=>`te levantas ${g("cansado","cansada")} aunque duermas 7-8 horas`,
@@ -766,6 +771,41 @@ function honestParas(R){
   return R.pp?[`Tu bloqueo parece estar en ${AX[R.pp].art}.`,"El SSE trabaja sobre todo con personas cuyo cuerpo está en modo alerta. Por tus respuestas, tu caso parece ir por otro camino, y eso es una buena noticia."]
     :["Tus cuatro ejes están en verde.","El SSE trabaja sobre todo con personas cuyo cuerpo está en modo alerta, y ese no parece tu caso. Si aun así no ves cambios, merece la pena comentarlo con tu médico para descartar otros factores."];
 }
+/* Bloques cortos del email de resultado (cada uno < 250 caracteres, límite de Systeme) */
+const P3TXT={lt6m:"menos de 6 meses",'6m_2a':"entre 6 meses y 2 años",'2_5a':"entre 2 y 5 años",gt5a:"más de 5 años"};
+function emailBloques(R){
+  const tried=R.tried.map(x=>P4CORTO[x]);
+  const P3B={nada:"Y aun así, la báscula apenas se mueve.",estanco:"Y cuando bajas, son 1-2 kg y te estancas.",recupero:"Y cuando bajas, lo recuperas en pocas semanas.",mantengo:"Y cada kilo te cuesta un mundo."};
+  const t=P3TXT[S.a.p3]?`Llevas ${P3TXT[S.a.p3]} intentándolo`:"Llevas tiempo intentándolo";
+  const gancho=(tried.length?`${t} y has probado ${join(tried.slice(0,4))}. `:`${t}. `)+(P3B[S.a.p3b]||"");
+  let sintomas=`Tus respuestas muestran un sistema nervioso en alerta: ${join(esSymptoms(2))}.`;
+  if(sintomas.length>250) sintomas=`Tus respuestas muestran un sistema nervioso en alerta: ${join(esSymptoms(1))}.`;
+  const consecuencia=S.a.p3b==="mantengo"?"Mientras eso siga así, cada kilo te va a costar el doble.":
+    S.a.p3b==="nada"?"Mientras eso siga así, tu cuerpo va a seguir agarrado a la grasa, por mucho que aprietes.":
+    "Mientras eso siga así, cada kilo te va a costar el doble. Y en cuanto aflojas un poco, vuelve.";
+  return {gancho:gancho.trim(),sintomas,consecuencia,caso:pickCase(0).email||""};
+}
+/* Versión corta para el email (Systeme admite máx. 255 caracteres por campo) */
+const P4CORTO={dietas:"dietas",ayuno:"ayuno",gym:"gimnasio",nutri:"nutricionista",entrenador:"entrenador",apps:"apps"};
+function porqueCorto(R){
+  const fit=(arr)=>arr.join(" ");
+  const ok=(t)=>t.length<=250;
+  if(!R.aES){
+    return R.pp?`Tu estrés y tu sueño están en buen sitio. Tu bloqueo parece estar en ${AX[R.pp].art}.`
+      :"Tus cuatro ejes están en verde. El SSE trabaja sobre todo con cuerpos en modo alerta, y ese no parece tu caso.";
+  }
+  const cierre=S.a.p3b==="mantengo"?"Mientras siga así, cada kilo te costará el doble.":"Mientras siga así, cada kilo te costará el doble y será fácil recuperarlo.";
+  const tried=R.tried.map(x=>P4CORTO[x]);
+  const intro=R.icp&&tried.length?`Has probado ${join(tried.length>3?tried.slice(0,3):tried)}.`:"";
+  for(const n of [2,1]){
+    const sy=join(esSymptoms(n));
+    let t=fit([intro,`Tus respuestas muestran un sistema nervioso en alerta: ${sy}.`,cierre].filter(Boolean));
+    if(ok(t)) return t;
+    t=fit([`Tus respuestas muestran un sistema nervioso en alerta: ${sy}.`,cierre]);
+    if(ok(t)) return t;
+  }
+  return fit(["Tus respuestas muestran un sistema nervioso que lleva tiempo en alerta.",cierre]);
+}
 /* Versión texto para el campo parrafo_porque del email */
 function porqueText(R){
   let P;
@@ -918,7 +958,8 @@ function saveLead(){
       perfil:PERFILES[R.perfil].n,
       perfil_frase:R.perfil==="freno_puntual"?"Tu estrés y tu sueño están en buen sitio.":PERFILES[R.perfil].l,
       punto_partida:R.pp?AX[R.pp].art:"",
-      parrafo_porque:porqueText(R),
+      parrafo_porque:porqueCorto(R),
+      ...emailBloques(R),
       cta_texto:(f.intencion==="si"&&R.aES)?"Reservar mi llamada":"Ver el vídeo",
       cta_url:(f.intencion==="si"&&R.aES)?CONFIG.CALENDLY_URL:CONFIG.VSL_URL
     },
