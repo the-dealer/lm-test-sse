@@ -21,11 +21,22 @@ const FIELD_MAP = {
   parrafo_porque: "parrafo_porque",
   cta_texto: "cta_texto",
   cta_url: "cta_url",
+  gancho: "gancho",
+  sintomas: "sintomas",
+  consecuencia: "consecuencia",
+  caso: "caso",
 };
 
 const MAX_TAGS = 25;
 let tagCache = null; // nombre → id (se reutiliza mientras la función siga caliente)
 
+// Systeme admite como mucho 255 caracteres por campo: si algo se pasa, cortamos en el último punto
+const corta = (t, max = 250) => {
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const dot = cut.lastIndexOf(". ");
+  return dot > 80 ? cut.slice(0, dot + 1) : cut.slice(0, cut.lastIndexOf(" ")) + "…";
+};
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const str = (v, max = 3000) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
@@ -89,6 +100,7 @@ async function tagId(name) {
 const FIELD_LABELS = {
   perfil: "Perfil", perfil_frase: "Frase del perfil", punto_partida: "Punto de partida",
   parrafo_porque: "Párrafo porqué", cta_texto: "Texto del botón", cta_url: "Enlace del botón",
+  gancho: "Gancho", sintomas: "Síntomas", consecuencia: "Consecuencia", caso: "Caso",
 };
 let fieldsReady = false;
 async function ensureFields() {
@@ -163,7 +175,7 @@ export default async function handler(req, res) {
   // 2. Contacto + campos (solo se envían los campos con valor, nunca null)
   const ce = b.campos_email && typeof b.campos_email === "object" ? b.campos_email : {};
   const custom = Object.entries(FIELD_MAP)
-    .map(([key, slug]) => ({ slug, value: str(ce[key]) }))
+    .map(([key, slug]) => ({ slug, value: corta(str(ce[key])) }))
     .filter((f) => f.value);
   const base = [{ slug: "first_name", value: nombre }, { slug: "phone_number", value: telefono }].filter((f) => f.value);
 
